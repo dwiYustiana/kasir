@@ -34,6 +34,7 @@ export const POSScreen: React.FC<POSScreenProps> = ({
 
   const { 
     products, 
+    isLoadingProducts,
     cart, 
     addToCart, 
     updateCartQty, 
@@ -217,7 +218,13 @@ export const POSScreen: React.FC<POSScreenProps> = ({
           </div>
 
           {/* Product Grid */}
-          {filteredProducts.length === 0 ? (
+          {isLoadingProducts && products.length === 0 ? (
+            <div className="bg-white rounded-2xl p-12 text-center border border-[#E8DFD3] space-y-3">
+              <div className="w-8 h-8 border-2 border-[#3E6B48] border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-sm font-semibold text-[#2D251E]">Memuat data menu dari Cloud Firestore...</p>
+              <p className="text-xs text-[#8C7A6B]">Menghubungkan ke database awan secara real-time</p>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="bg-white rounded-2xl p-12 text-center border border-[#E8DFD3]">
               <Utensils className="w-10 h-10 text-[#C4B7A6] mx-auto mb-3" />
               <p className="text-base font-semibold text-[#2D251E]">Tidak ada menu yang sesuai</p>

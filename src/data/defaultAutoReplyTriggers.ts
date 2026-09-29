@@ -1,0 +1,67 @@
+import { WhatsAppAutoReplyTrigger } from '../types/pos';
+
+export const DEFAULT_AUTO_REPLY_TRIGGERS: WhatsAppAutoReplyTrigger[] = [
+  {
+    id: 'trigger-order',
+    keyword: 'order',
+    matchType: 'contains',
+    actionType: 'create_order',
+    responseTemplate: 'Halo Kak {name}! Pesanan Anda dengan kata kunci ORDER berhasil tercatat di Kasir Rarumi Kitchen.\n\nSubtotal: {subtotal}.\nStatus: Menunggu konfirmasi kasir 🙏✨',
+    isEnabled: true,
+    description: 'Mendeteksi pesanan otomatis, membuat draf di kasir dan menghitung estimasi harga.',
+  },
+  {
+    id: 'trigger-pesan',
+    keyword: 'pesan',
+    matchType: 'contains',
+    actionType: 'create_order',
+    responseTemplate: 'Halo Kak {name}! Pesanan Anda berhasil dicatat oleh sistem kasir Rarumi Kitchen. Total: {subtotal}. Kami segera siapkan ya! 🌱',
+    isEnabled: true,
+    description: 'Alternatif kata kunci pemesanan instan via WhatsApp.',
+  },
+  {
+    id: 'trigger-menu',
+    keyword: 'menu',
+    matchType: 'contains',
+    actionType: 'reply_ready_menu',
+    responseTemplate: '', // Will be dynamically replaced by generateReadyMenuListText
+    isEnabled: true,
+    description: 'Mengirimkan daftar menu yang saat ini berstatus READY lengkap dengan harga & stok.',
+  },
+  {
+    id: 'trigger-ready',
+    keyword: 'ready',
+    matchType: 'contains',
+    actionType: 'reply_ready_menu',
+    responseTemplate: '',
+    isEnabled: true,
+    description: 'Menampilkan list menu ready ketika pelanggan menanyakan ketersediaan hari ini.',
+  },
+  {
+    id: 'trigger-ongkir',
+    keyword: 'ongkir',
+    matchType: 'contains',
+    actionType: 'reply_text',
+    responseTemplate: '🛵 *INFORMASI ESTIMASI ONGKIR & EKSPEDISI:*\n• Jabodetabek Sameday: Paxel Cold/Frozen Chain (Rp 18.000 - Rp 25.000)\n• Instan / Sameday: GrabExpress / GoSend (Sesuai tarif aplikasi)\n• Luar Kota: Paxel Nextday berpendingin\n\nSilakan sertakan kelurahan & kecamatan Anda ya Kak! 📦',
+    isEnabled: true,
+    description: 'Informasi tarif Paxel Cold Chain dan opsi pengiriman berpendingin.',
+  },
+  {
+    id: 'trigger-lokasi',
+    keyword: 'lokasi',
+    matchType: 'contains',
+    actionType: 'reply_text',
+    responseTemplate: '📍 *LOKASI CENTRAL KITCHEN RARUMI:*\nJl. Kesehatan Raya No. 45, Jakarta Selatan.\nBuka setiap hari: 07.30 - 19.30 WIB.\nBisa pickup mandiri / dikirim Paxel Sameday. Ditunggu kunjungannya! ✨',
+    isEnabled: true,
+    description: 'Informasi alamat dapur dan jam operasional.',
+  },
+  {
+    id: 'trigger-reseller',
+    keyword: 'reseller',
+    matchType: 'contains',
+    actionType: 'reply_text',
+    responseTemplate: '🤝 *PROGRAM KEMITRAAN RESELLER RARUMI KITCHEN*\nDapatkan potongan harga khusus reseller, margin hingga 25%, dan fasilitas cold chain delivery!\nSilakan ketik *DAFTAR RESELLER [Nama Toko] [Kota]* atau hubungi admin kemitraan kami. 🌱',
+    isEnabled: true,
+    description: 'Informasi penawaran dan pendaftaran kemitraan reseller.',
+  },
+];

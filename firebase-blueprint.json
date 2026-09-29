@@ -1,0 +1,144 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Master catalog item for Rarumi Healthy Kitchen",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique product SKU or identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Product display name"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category display name"
+        },
+        "categoryKey": {
+          "type": "string",
+          "description": "Category slug key"
+        },
+        "price": {
+          "type": "number",
+          "description": "Retail price in IDR"
+        },
+        "costPrice": {
+          "type": "number",
+          "description": "Cost of goods sold / HPP in IDR"
+        },
+        "stockQty": {
+          "type": "number",
+          "description": "Physical stock count"
+        },
+        "minStock": {
+          "type": "number",
+          "description": "Minimum stock warning threshold"
+        },
+        "isAvailable": {
+          "type": "boolean",
+          "description": "Availability flag (Ready vs Habis ❎)"
+        },
+        "dietaryTags": {
+          "type": "string",
+          "description": "Comma separated or array of tags: GF, EF, DF, Vegan, Grassfed"
+        },
+        "portion": {
+          "type": "string",
+          "description": "Portion size, packaging, or weight"
+        },
+        "brand": {
+          "type": "string",
+          "description": "Brand or artisan producer"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Storage or reheat preparation instructions"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": ["id", "name", "category", "categoryKey", "price", "isAvailable"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Sales invoice transaction record",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Transaction identifier or invoice number"
+        },
+        "invoiceNumber": {
+          "type": "string",
+          "description": "Formatted invoice code"
+        },
+        "cashierName": {
+          "type": "string",
+          "description": "Cashier in charge"
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Customer name"
+        },
+        "customerPhone": {
+          "type": "string",
+          "description": "Customer WhatsApp contact"
+        },
+        "subtotal": {
+          "type": "number",
+          "description": "Gross total before discounts"
+        },
+        "discount": {
+          "type": "number",
+          "description": "Applied discount amount"
+        },
+        "finalTotal": {
+          "type": "number",
+          "description": "Net payable amount"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "TUNAI, QRIS, or TRANSFER"
+        },
+        "cashGiven": {
+          "type": "number",
+          "description": "Cash tendered by customer"
+        },
+        "changeDue": {
+          "type": "number",
+          "description": "Change due in cash"
+        },
+        "items": {
+          "type": "string",
+          "description": "Serialized JSON list of items purchased"
+        },
+        "orderNotes": {
+          "type": "string",
+          "description": "Additional order notes"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of sale"
+        }
+      },
+      "required": ["id", "invoiceNumber", "finalTotal", "paymentMethod", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of all menu items and inventory"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Completed sales transactions and thermal receipts"
+    }
+  }
+}

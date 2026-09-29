@@ -42,7 +42,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   onSuccess,
   initialTab = 'pay'
 }) => {
-  const { cart, cartTotal, checkout } = usePOS();
+  const { cart, cartTotal, checkout, customerUser } = usePOS();
 
   // Active view tab inside checkout: 'pay' (Kasir) or 'summary' (Ringkasan WA)
   const [activeCheckoutTab, setActiveCheckoutTab] = useState<'pay' | 'summary'>(initialTab);
@@ -51,8 +51,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   React.useEffect(() => {
     if (isOpen) {
       setActiveCheckoutTab(initialTab);
+      if (customerUser) {
+        if (!customerName) setCustomerName(customerUser.name);
+        if (!customerPhone) setCustomerPhone(customerUser.phone);
+        if (!customerAddress && customerUser.address) setCustomerAddress(customerUser.address);
+        if (!orderNotes && customerUser.notes) setOrderNotes(customerUser.notes);
+      }
     }
-  }, [isOpen, initialTab]);
+  }, [isOpen, initialTab, customerUser]);
 
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('TRANSFER_BCA');
@@ -562,9 +568,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-[#E0D5C7] text-xs font-semibold text-[#6E5D4F] hover:bg-white transition-colors cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-[#E0D5C7] text-xs font-semibold text-[#6E5D4F] hover:bg-white hover:text-[#2D251E] transition-colors cursor-pointer"
+              title="Batal dan Tutup (Esc)"
             >
-              Batal
+              Batal / Keluar
             </button>
 
             {/* Quick One-Tap WhatsApp Button in footer */}

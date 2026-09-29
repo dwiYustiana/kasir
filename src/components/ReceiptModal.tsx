@@ -4,21 +4,14 @@ import {
   Printer, 
   CheckCircle2, 
   Copy, 
-  ArrowRight,
-  MessageSquare,
-  FileText,
-  Send,
-  Check
+  ArrowRight, 
+  MessageSquare, 
+  Send, 
+  Check,
+  Share2
 } from 'lucide-react';
 import { Transaction } from '../types/pos';
 import { formatRupiah } from '../data/masterMenu';
-import { 
-  generateWhatsAppOrderSummary, 
-  getWhatsAppApiUrl,
-  generateOrderTextWithRarumiWhatsAppLink,
-  RARUMI_WHATSAPP_DISPLAY,
-  RARUMI_WHATSAPP_NUMBER
-} from '../utils/orderSummaryTemplate';
 
 interface ReceiptModalProps {
   transaction: Transaction | null;
@@ -32,7 +25,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   onNewTransaction 
 }) => {
   const [activeTab, setActiveTab] = useState<'receipt' | 'wa_summary'>('receipt');
-  const [formatType, setFormatType] = useState<'with-link' | 'standard'>('with-link');
   const [copied, setCopied] = useState<boolean>(false);
 
   if (!transaction) return null;
@@ -49,57 +41,91 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     window.print();
   };
 
-  // 1. Standard Order Summary
-  const orderSummaryText = generateWhatsAppOrderSummary({
-    customerName: transaction.customerName,
-    customerPhone: transaction.customerPhone,
-    customerAddress: transaction.customerAddress,
-    deliveryMethod: transaction.deliveryMethod,
-    paymentMethod: transaction.paymentMethod,
-    items: transaction.items,
-    subtotal: transaction.subtotal,
-    discount: transaction.discount,
-    shippingFee: transaction.shippingFee,
-    invoiceNumber: transaction.invoiceNumber,
-    orderNotes: transaction.orderNotes,
-  });
+  /**
+   * Generates a WhatsApp-ready order summary string containing:
+   * 1. Customer details (Nama, No WhatsApp, Alamat, Kurir)
+   * 2. Line items with quantities and prices
+   * 3. Subtotal, discounts, shipping, total and payment method
+   */
+  const generateWhatsAppOrderSummaryString = (tx: Transaction): string => {
+    const lineItems = tx.items
+      .map((item, idx) => {
+        const portion = item.product.portion ? ` (${item.product.portion})` : '';
+        const lineTotal = item.product.price * item.quantity;
+        return `${idx + 1}. *${item.product.name}*${portion}\n   ${item.quantity}x @ ${formatRupiah(item.product.price)} = *${formatRupiah(lineTotal)}*`;
+      })
+      .join('\n');
 
-  // 2. Link WhatsApp Rarumi text
-  const rarumiLinkData = generateOrderTextWithRarumiWhatsAppLink({
-    customerName: transaction.customerName || 'Pelanggan',
-    items: transaction.items,
-    subtotal: transaction.subtotal,
-    discount: transaction.discount,
-    shippingFee: transaction.shippingFee,
-    invoiceNumber: transaction.invoiceNumber,
-    orderNotes: transaction.orderNotes,
-  });
+    const lines: (string | null)[] = [
+      `*Rarumi Healthy Kitchen* 🌱`,
+      `_Gluten-Free, Egg-Free & Organic_`,
+      `━━━━━━━━━━━━━━━━━━━━━━`,
+      `*RINGKASAN PESANAN RESMI*`,
+      `No. Invoice: \`${tx.invoiceNumber}\``,
+      `Waktu: ${new Date(tx.createdAt).toLocaleString('id-ID')}`,
+      `Kasir: ${tx.cashierName || 'Kasir'}`,
+      ``,
+      `*DETAIL PELANGGAN:*`,
+      `• Nama: *${tx.customerName || 'Pelanggan Walk-In'}*`,
+      tx.customerPhone ? `• WhatsApp: ${tx.customerPhone}` : null,
+      tx.customerAddress ? `• Alamat: ${tx.customerAddress}` : null,
+      tx.deliveryMethod ? `• Pengiriman: ${tx.deliveryMethod}` : null,
+      ``,
+      `*RINCIAN ITEM PESANAN (LINE ITEMS):*`,
+      lineItems,
+      ``,
+      `━━━━━━━━━━━━━━━━━━━━━━`,
+      `*Subtotal:* ${formatRupiah(tx.subtotal)}`,
+      tx.shippingFee && tx.shippingFee > 0 ? `*Ongkos Kirim:* +${formatRupiah(tx.shippingFee)}` : null,
+      tx.discount && tx.discount > 0 ? `*Diskon:* -${formatRupiah(tx.discount)}` : null,
+      `*TOTAL PEMBAYARAN:* *${formatRupiah(tx.total)}*`,
+      `*Metode Pembayaran:* ${tx.paymentMethod}`,
+      tx.paymentMethod === 'TUNAI' ? `*Tunai Diterima:* ${formatRupiah(tx.cashGiven)}\n*Kembalian:* ${formatRupiah(tx.changeDue)}` : null,
+      tx.orderNotes ? `\nCatatan Khusus: _${tx.orderNotes}_` : null,
+      ``,
+      `*Tips Penyimpanan:*`,
+      `_Roti sourdough & frozen food simpan di freezer. Reheat kukus -+ 5 menit sebelum dinikmati._`,
+      ``,
+      `_Jazakumullah Khairan Katsiran telah berbelanja di Rarumi Healthy Kitchen!_ 🙏✨`,
+    ];
 
-  const activeDisplayText = formatType === 'with-link' 
-    ? rarumiLinkData.formattedText 
-    : orderSummaryText;
+    return lines.filter((l): l is string => l !== null).join('\n');
+  };
 
-  const handleSendWhatsAppOneTap = () => {
-    if (formatType === 'with-link') {
-      window.open(rarumiLinkData.oneTapShareUrl, '_blank');
-    } else {
-      const url = getWhatsAppApiUrl(transaction.customerPhone, orderSummaryText);
-      window.open(url, '_blank');
+  const whatsappMessage = generateWhatsAppOrderSummaryString(transaction);
+
+  /**
+   * Triggers window.open to WhatsApp API with the generated order summary string
+   */
+  const handleKirimViaWhatsApp = () => {
+    if (!transaction) return;
+    const summary = generateWhatsAppOrderSummaryString(transaction);
+
+    // Normalize phone number to international format (62...) if present
+    let rawPhone = transaction.customerPhone ? transaction.customerPhone.replace(/\D/g, '') : '';
+    if (rawPhone.startsWith('0')) {
+      rawPhone = '62' + rawPhone.slice(1);
     }
+
+    const encodedText = encodeURIComponent(summary);
+    const whatsappApiUrl = rawPhone
+      ? `https://api.whatsapp.com/send?phone=${rawPhone}&text=${encodedText}`
+      : `https://api.whatsapp.com/send?text=${encodedText}`;
+
+    window.open(whatsappApiUrl, '_blank');
   };
 
   const handleCopySummary = () => {
-    navigator.clipboard.writeText(activeDisplayText);
+    navigator.clipboard.writeText(whatsappMessage);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
-
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white">
       <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-[#E8DFD3] overflow-hidden my-4 print:shadow-none print:border-none print:max-w-full">
         
-        {/* Modal Top Actions */}
+        {/* Modal Top Header */}
         <div className="p-4 bg-[#FAF8F5] border-b border-[#E8DFD3] flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2 text-emerald-700">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -116,7 +142,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           </button>
         </div>
 
-        {/* View Switcher Tabs (Printable Thermal vs WhatsApp Order Summary) */}
+        {/* View Switcher Tabs */}
         <div className="flex border-b border-[#E8DFD3] bg-[#F4EFEA] px-4 pt-2 gap-2 text-xs print:hidden">
           <button
             onClick={() => setActiveTab('receipt')}
@@ -139,12 +165,12 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Template Ringkasan WhatsApp</span>
+            <span>Ringkasan WhatsApp</span>
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
           </button>
         </div>
 
-        {/* TAB 1: Thermal Receipt Paper View (58mm style) */}
+        {/* TAB 1: Thermal Receipt Paper View (58mm) */}
         {activeTab === 'receipt' ? (
           <div className="p-6 bg-[#FCFBF9] font-mono text-xs text-[#2D251E] space-y-4 max-h-[500px] overflow-y-auto print:max-h-none print:p-2" id="printable-receipt">
             {/* Receipt Header */}
@@ -156,7 +182,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 Gluten-Free, Egg-Free & Organic
               </p>
               <p className="text-[10px] text-[#8C7A6B]">
-                WhatsApp: 0812-xxxx-xxxx · Halal & Thayyib
+                WhatsApp: 0812-9876-5432 · Halal & Thayyib
               </p>
             </div>
 
@@ -178,6 +204,12 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 <div className="flex justify-between">
                   <span>Pelanggan:</span>
                   <span className="font-semibold">{transaction.customerName}</span>
+                </div>
+              )}
+              {transaction.customerPhone && (
+                <div className="flex justify-between">
+                  <span>WhatsApp:</span>
+                  <span>{transaction.customerPhone}</span>
                 </div>
               )}
               {transaction.deliveryMethod && (
@@ -266,36 +298,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
         ) : (
           /* TAB 2: WhatsApp Order Summary View */
           <div className="p-4 sm:p-5 bg-[#ECE5DD] max-h-[500px] overflow-y-auto space-y-3">
-            <div className="flex items-center gap-1.5 p-1 bg-white rounded-xl text-xs">
-              <button
-                type="button"
-                onClick={() => setFormatType('with-link')}
-                className={`flex-1 py-1.5 px-2.5 rounded-lg font-semibold transition-all cursor-pointer ${
-                  formatType === 'with-link' ? 'bg-[#3E6B48] text-white shadow-xs' : 'text-[#6E5D4F]'
-                }`}
-              >
-                🔗 Format + Link WA Rarumi ({RARUMI_WHATSAPP_DISPLAY})
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormatType('standard')}
-                className={`flex-1 py-1.5 px-2.5 rounded-lg font-semibold transition-all cursor-pointer ${
-                  formatType === 'standard' ? 'bg-[#3E6B48] text-white shadow-xs' : 'text-[#6E5D4F]'
-                }`}
-              >
-                📋 Format Lengkap
-              </button>
-            </div>
-
-            <div className="text-[10px] text-zinc-600 text-center font-mono">
-              Template Ringkasan Siap Dikirim ke WhatsApp Pelanggan
+            <div className="text-[11px] text-zinc-700 text-center font-semibold">
+              Pratinjau Format Pesan WhatsApp
             </div>
             <div className="bg-white rounded-2xl p-4 sm:p-5 text-xs font-mono whitespace-pre-wrap text-[#111B21] leading-relaxed shadow-sm border border-[#DFD8D0]">
-              {activeDisplayText}
+              {whatsappMessage}
             </div>
           </div>
         )}
-
 
         {/* Modal Action Buttons (Hidden when printing) */}
         <div className="p-4 bg-[#FAF8F5] border-t border-[#E8DFD3] space-y-2 print:hidden">
@@ -308,18 +318,27 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               <span>Cetak Struk Fisik</span>
             </button>
 
-            {/* Prominent One-Tap WhatsApp Button */}
+            {/* Prompt Requirement: 'Kirim via WhatsApp' button triggering window.open to WhatsApp API */}
             <button
-              onClick={handleSendWhatsAppOneTap}
+              onClick={handleKirimViaWhatsApp}
               className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
-              title="Kirim ringkasan pesanan langsung via WhatsApp API"
+              title="Buka WhatsApp Web / App dengan ringkasan pesanan"
             >
               <Send className="w-4 h-4" />
-              <span>Kirim Ringkasan WA (1-Tap)</span>
+              <span>Kirim via WhatsApp</span>
             </button>
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="py-2 px-3 rounded-xl bg-white border border-[#E0D5C7] text-xs font-medium text-[#6E5D4F] hover:text-[#2D251E] flex items-center justify-center gap-1 cursor-pointer"
+              title="Tutup Struk (Esc)"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Tutup</span>
+            </button>
+
             <button
               onClick={handleCopySummary}
               className="flex-1 py-2 px-3 rounded-xl bg-white border border-[#E0D5C7] text-xs font-medium text-[#6E5D4F] hover:text-[#2D251E] flex items-center justify-center gap-1.5 cursor-pointer"
@@ -332,7 +351,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5 text-[#3E6B48]" />
-                  <span>Salin Template WA</span>
+                  <span>Salin Ringkasan</span>
                 </>
               )}
             </button>

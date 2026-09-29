@@ -27,6 +27,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
   const [categoryKey, setCategoryKey] = useState<string>(CATEGORY_GROUPS[0].key);
   const [priceStr, setPriceStr] = useState<string>('35000');
   const [costPriceStr, setCostPriceStr] = useState<string>('22000');
+  const [resellerPriceStr, setResellerPriceStr] = useState<string>('29000');
   const [stockQtyStr, setStockQtyStr] = useState<string>('15');
   const [minStockStr, setMinStockStr] = useState<string>('3');
   const [portion, setPortion] = useState<string>('250gr');
@@ -39,11 +40,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
 
   const price = parseInt(priceStr.replace(/\D/g, ''), 10) || 0;
   const costPrice = parseInt(costPriceStr.replace(/\D/g, ''), 10) || 0;
+  const resellerPrice = parseInt(resellerPriceStr.replace(/\D/g, ''), 10) || Math.round((price * 0.82) / 500) * 500;
   const stockQty = parseInt(stockQtyStr.replace(/\D/g, ''), 10) || 0;
   const minStock = parseInt(minStockStr.replace(/\D/g, ''), 10) || 0;
 
   const profit = Math.max(0, price - costPrice);
   const margin = price > 0 ? Math.round((profit / price) * 100) : 0;
+  const resellerMargin = price > 0 ? Math.round(((price - resellerPrice) / price) * 100) : 0;
   const estimatedSku = `RRM-${String(products.length + 1).padStart(3, '0')}`;
 
   const availableDietTags: DietaryTag[] = [
@@ -75,6 +78,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
       categoryKey: selectedCategoryGroup.key,
       price,
       costPrice,
+      resellerPrice,
       stockQty,
       minStock,
       isAvailable,
@@ -165,14 +169,14 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
             </div>
           </div>
 
-          {/* Price, HPP and Profit preview */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-[#FAF8F5] rounded-2xl border border-[#E8DFD3]">
+          {/* Price, Reseller Price, HPP and Profit preview */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3.5 bg-[#FAF8F5] rounded-2xl border border-[#E8DFD3]">
             <div>
               <label className="block font-semibold text-[#2D251E] mb-1">
-                Harga Jual Kasir (Rp) *
+                Harga Retail (Rp) *
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#8C7A6B]">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[#8C7A6B]">
                   Rp
                 </span>
                 <input
@@ -182,7 +186,28 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                     const clean = e.target.value.replace(/\D/g, '');
                     setPriceStr(clean ? Number(clean).toLocaleString('id-ID') : '');
                   }}
-                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#E0D5C7] rounded-xl font-mono font-bold text-sm focus:ring-2 focus:ring-[#3E6B48] focus:outline-none"
+                  className="w-full pl-8 pr-2.5 py-2 bg-white border border-[#E0D5C7] rounded-xl font-mono font-bold text-xs focus:ring-2 focus:ring-[#3E6B48] focus:outline-none"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-amber-900 mb-1">
+                Harga Reseller (Rp) *
+              </label>
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-700">
+                  Rp
+                </span>
+                <input
+                  type="text"
+                  value={resellerPriceStr}
+                  onChange={(e) => {
+                    const clean = e.target.value.replace(/\D/g, '');
+                    setResellerPriceStr(clean ? Number(clean).toLocaleString('id-ID') : '');
+                  }}
+                  className="w-full pl-8 pr-2.5 py-2 bg-white border border-amber-300 rounded-xl font-mono font-bold text-xs text-amber-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   required
                 />
               </div>
@@ -190,10 +215,10 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
 
             <div>
               <label className="block font-semibold text-[#6E5D4F] mb-1">
-                Harga Modal / HPP (Rp) *
+                Harga Modal/HPP (Rp) *
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#8C7A6B]">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[#8C7A6B]">
                   Rp
                 </span>
                 <input
@@ -203,17 +228,15 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({ isOpen, onClos
                     const clean = e.target.value.replace(/\D/g, '');
                     setCostPriceStr(clean ? Number(clean).toLocaleString('id-ID') : '');
                   }}
-                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#E0D5C7] rounded-xl font-mono text-sm focus:ring-2 focus:ring-[#3E6B48] focus:outline-none"
+                  className="w-full pl-8 pr-2.5 py-2 bg-white border border-[#E0D5C7] rounded-xl font-mono text-xs focus:ring-2 focus:ring-[#3E6B48] focus:outline-none"
                   required
                 />
               </div>
             </div>
 
-            <div className="sm:col-span-2 pt-1 border-t border-[#E8DFD3] flex items-center justify-between text-[11px] text-[#6E5D4F]">
-              <span>Estimasi Margin Keuntungan:</span>
-              <span className="font-bold text-emerald-700 font-mono">
-                {formatRupiah(profit)} ({margin}%)
-              </span>
+            <div className="sm:col-span-3 pt-1 border-t border-[#E8DFD3] flex items-center justify-between text-[10px] text-[#6E5D4F]">
+              <span>Margin Retail: <strong className="font-mono text-emerald-700">{formatRupiah(profit)} ({margin}%)</strong></span>
+              <span>Diskon Reseller: <strong className="font-mono text-amber-800">{formatRupiah(Math.max(0, price - resellerPrice))} ({resellerMargin}%)</strong></span>
             </div>
           </div>
 

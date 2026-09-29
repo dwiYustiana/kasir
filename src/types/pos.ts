@@ -8,6 +8,7 @@ export interface Product {
   categoryKey: string;
   price: number;
   costPrice: number; // HPP (Harga Pokok Penjualan)
+  resellerPrice?: number; // Harga Khusus Reseller
   stockQty: number; // Stored units
   minStock: number;
   isAvailable: boolean; // Ready vs Habis (❎)
@@ -21,6 +22,8 @@ export interface CartItem {
   product: Product;
   quantity: number;
   discount: number; // per item discount in IDR
+  isResellerPrice?: boolean;
+  appliedPrice?: number;
   notes?: string;
 }
 
@@ -51,6 +54,9 @@ export interface Transaction {
   orderNotes?: string;
   cashierName: string;
   status: 'COMPLETED' | 'REFUNDED';
+  isResellerOrder?: boolean;
+  resellerId?: string;
+  resellerName?: string;
 }
 
 
@@ -65,3 +71,62 @@ export interface SalesAnalytics {
   topProducts: { name: string; qty: number; revenue: number }[];
   paymentBreakdown: { [method: string]: number };
 }
+
+export interface CustomerProfile {
+  name: string;
+  phone: string;
+  address?: string;
+  notes?: string;
+  loggedInAt: string;
+}
+
+export interface WhatsAppIncomingMessage {
+  id: string;
+  fromPhone: string;
+  fromName: string;
+  text: string;
+  timestamp: string;
+  isOrderKeyword: boolean;
+  isMenuKeyword: boolean;
+  botReply?: string;
+  draftOrderId?: string;
+}
+
+export interface WhatsAppDraftOrder {
+  id: string;
+  messageId: string;
+  customerName: string;
+  customerPhone: string;
+  originalText: string;
+  createdAt: string;
+  items: CartItem[];
+  subtotal: number;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+}
+
+export interface WhatsAppAutoReplyTrigger {
+  id: string;
+  keyword: string;
+  matchType: 'contains' | 'exact' | 'startsWith';
+  actionType: 'reply_text' | 'reply_ready_menu' | 'create_order';
+  responseTemplate: string;
+  isEnabled: boolean;
+  description?: string;
+}
+
+export interface Reseller {
+  id: string;
+  name: string;
+  storeName?: string;
+  phone: string;
+  city: string;
+  tier: 'SILVER' | 'GOLD' | 'PLATINUM';
+  discountPercent?: number;
+  totalOrdersCount: number;
+  totalSpent: number;
+  joinedDate: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  notes?: string;
+}
+
+

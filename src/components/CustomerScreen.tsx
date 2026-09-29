@@ -34,10 +34,26 @@ import {
 
 interface CustomerScreenProps {
   onOpenAssistant?: () => void;
+  onOpenWhatsAppLogin?: () => void;
+  onOpenChatBotOrder?: () => void;
 }
 
-export const CustomerScreen: React.FC<CustomerScreenProps> = ({ onOpenAssistant }) => {
-  const { products, cart, addToCart, updateCartQty, removeFromCart, clearCart, cartTotal, cartItemCount } = usePOS();
+export const CustomerScreen: React.FC<CustomerScreenProps> = ({ 
+  onOpenAssistant,
+  onOpenWhatsAppLogin,
+  onOpenChatBotOrder
+}) => {
+  const { 
+    products, 
+    cart, 
+    addToCart, 
+    updateCartQty, 
+    removeFromCart, 
+    clearCart, 
+    cartTotal, 
+    cartItemCount,
+    customerUser
+  } = usePOS();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -46,13 +62,23 @@ export const CustomerScreen: React.FC<CustomerScreenProps> = ({ onOpenAssistant 
 
   // Customer Checkout Drawer State
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
-  const [customerName, setCustomerName] = useState<string>('');
-  const [customerPhone, setCustomerPhone] = useState<string>('');
-  const [customerAddress, setCustomerAddress] = useState<string>('');
+  const [customerName, setCustomerName] = useState<string>(customerUser?.name || '');
+  const [customerPhone, setCustomerPhone] = useState<string>(customerUser?.phone || '');
+  const [customerAddress, setCustomerAddress] = useState<string>(customerUser?.address || '');
   const [deliveryMethod, setDeliveryMethod] = useState<string>('Paxel Sameday (Cold / Frozen Chain)');
-  const [orderNotes, setOrderNotes] = useState<string>('');
+  const [orderNotes, setOrderNotes] = useState<string>(customerUser?.notes || '');
   const [copied, setCopied] = useState<boolean>(false);
   const [orderSubmitted, setOrderSubmitted] = useState<boolean>(false);
+
+  // Keep form synced if user logs in
+  React.useEffect(() => {
+    if (customerUser) {
+      if (!customerName) setCustomerName(customerUser.name);
+      if (!customerPhone) setCustomerPhone(customerUser.phone);
+      if (!customerAddress && customerUser.address) setCustomerAddress(customerUser.address);
+      if (!orderNotes && customerUser.notes) setOrderNotes(customerUser.notes);
+    }
+  }, [customerUser]);
 
   // Filtered Products for Customer Storefront
   const filteredProducts = useMemo(() => {
@@ -143,6 +169,65 @@ export const CustomerScreen: React.FC<CustomerScreenProps> = ({ onOpenAssistant 
             {RARUMI_WHATSAPP_DISPLAY}
           </a>
         </div>
+      </div>
+
+      {/* Feature Highlight Bar: Chatbot Order & WhatsApp Login */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        {onOpenChatBotOrder && (
+          <div 
+            onClick={onOpenChatBotOrder}
+            className="bg-white hover:bg-[#FCFBF9] p-4 rounded-2xl border border-[#E8DFD3] shadow-xs flex items-center justify-between gap-3 cursor-pointer group transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-bold text-xs sm:text-sm text-[#2D251E] group-hover:text-[#3E6B48] transition-colors">
+                    Chatbot Order Cerdas
+                  </h3>
+                  <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded-full">
+                    Ketik & Pesan
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#8C7A6B]">
+                  Pesan instan cukup ketik: <em>"Pesan Sourdough 2 biji"</em>
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-[#3E6B48] group-hover:translate-x-0.5 transition-all shrink-0" />
+          </div>
+        )}
+
+        {onOpenWhatsAppLogin && (
+          <div 
+            onClick={onOpenWhatsAppLogin}
+            className="bg-white hover:bg-[#FCFBF9] p-4 rounded-2xl border border-[#E8DFD3] shadow-xs flex items-center justify-between gap-3 cursor-pointer group transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform">
+                <MessageSquare className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-bold text-xs sm:text-sm text-[#2D251E] group-hover:text-emerald-700 transition-colors">
+                    {customerUser ? `Halo, ${customerUser.name}` : 'Login Akun WhatsApp'}
+                  </h3>
+                  {customerUser && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full">
+                      Terhubung
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-[#8C7A6B]">
+                  {customerUser ? `${customerUser.phone} · Data checkout otomatis terisi` : 'Simpan alamat pengiriman & riwayat pesanan'}
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-[#8C7A6B] group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all shrink-0" />
+          </div>
+        )}
       </div>
 
       {/* Search & Filter Section */}
