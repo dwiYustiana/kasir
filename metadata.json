@@ -1,0 +1,7 @@
+{
+  "name": "Rarumi Healthy & Organic Kitchen",
+  "description": "Katalog menu harian gluten-free, egg-free, grassfed, dan frozen food sehat dengan pemesanan langsung WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
